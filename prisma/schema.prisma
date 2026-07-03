@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ReminderType {
+  SUBSCRIPTION
+  BILL
+  APPOINTMENT
+  FOLLOW_UP
+  DEAL
+  WATCHLIST
+  CONTACT
+  CALL
+  EMAIL
+  GENERAL
+}
+
+enum ReminderPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum ReminderStatus {
+  PENDING
+  DONE
+  SNOOZED
+  CANCELLED
+  WAITING
+}
+
+enum ReminderSourceApp {
+  REMINDFLOW
+  COCARE
+  HOMESTOCK
+  JOB_TRACKER
+  LIFE_DASHBOARD
+}
+
+model Reminder {
+  id               String            @id @default(cuid())
+  title            String
+  description      String?
+  type             ReminderType      @default(GENERAL)
+  priority         ReminderPriority  @default(MEDIUM)
+  status           ReminderStatus    @default(PENDING)
+  startDate        DateTime?
+  dueDate          DateTime
+  completedAt      DateTime?
+  snoozedUntil     DateTime?
+  remindBeforeDays Int[]             @default([0])
+  amount           Decimal?          @db.Decimal(10, 2)
+  targetPrice      Decimal?          @db.Decimal(10, 2)
+  currency         String            @default("AUD")
+  storeName        String?
+  url              String?
+  contactName      String?
+  contactInfo      String?
+  notes            String?
+  completionNote   String?
+  repeatFrequency  String            @default("NONE")
+  sourceApp        ReminderSourceApp @default(REMINDFLOW)
+  sourceId         String?
+  linkedEntityType String?
+  linkedEntityId   String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@index([dueDate])
+  @@index([status])
+  @@index([type])
+  @@index([sourceApp, sourceId])
+  @@index([linkedEntityType, linkedEntityId])
+}

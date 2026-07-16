@@ -6,6 +6,10 @@ const publicFilePattern = /\.(?:png|jpg|jpeg|gif|webp|svg|ico|txt|xml|webmanifes
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  if (process.env.NODE_ENV !== "production" && process.env.SCREENSHOT_MODE === "true") {
+    return NextResponse.next();
+  }
+
   if (isPublicPath(pathname)) {
     return NextResponse.next();
   }

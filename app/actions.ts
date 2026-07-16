@@ -5,6 +5,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { sendDailyReminderEmail } from "@/lib/daily-email";
 import { prisma } from "@/lib/prisma";
+
+function blockScreenshotWrites() {
+  if (process.env.SCREENSHOT_MODE === "true") {
+    throw new Error("Changes are disabled in screenshot mode.");
+  }
+}
 import { parseDateOnly, reminderSchema } from "@/lib/reminders";
 
 function getString(formData: FormData, key: string) {
@@ -50,6 +56,7 @@ function parseReminderForm(formData: FormData, status: "PENDING" | "WAITING" | R
 }
 
 export async function createReminder(formData: FormData) {
+  blockScreenshotWrites();
   const returnTo = redirectTarget(formData);
 
   try {
@@ -69,6 +76,7 @@ export async function createReminder(formData: FormData) {
 }
 
 export async function updateReminder(id: string, formData: FormData) {
+  blockScreenshotWrites();
   const returnTo = redirectTarget(formData);
 
   try {
@@ -92,12 +100,14 @@ export async function updateReminder(id: string, formData: FormData) {
 }
 
 export async function deleteReminder(id: string, formData?: FormData) {
+  blockScreenshotWrites();
   await prisma.reminder.delete({ where: { id } });
   revalidatePath("/");
   redirect(redirectTarget(formData));
 }
 
 export async function setReminderStatus(id: string, status: ReminderStatus, formData?: FormData) {
+  blockScreenshotWrites();
   const completionNote = formData ? getString(formData, "completionNote").trim() || null : null;
 
   await prisma.$transaction(async (tx) => {
@@ -171,6 +181,7 @@ function nextRepeatDate(date: Date, frequency: string) {
 }
 
 export async function sendTestReminderEmail() {
+  blockScreenshotWrites();
   const result = await sendDailyReminderEmail();
   const params = new URLSearchParams({
     emailStatus: result.status,

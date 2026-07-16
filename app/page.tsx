@@ -37,6 +37,7 @@ import {
 } from "@/app/actions";
 import { logout } from "@/app/login/actions";
 import { prisma } from "@/lib/prisma";
+import { getScreenshotReminders } from "@/lib/screenshot-reminders";
 import {
   localDateInputValue,
   remindBeforeDayOptions,
@@ -123,9 +124,11 @@ export default async function Home({
   const month = isValid(parsedMonth) ? parsedMonth : new Date();
   const returnTo = buildReturnTo({ view, typeFilter, statusFilter, query, month: params?.month });
 
-  const reminders = await prisma.reminder.findMany({
-    orderBy: [{ status: "asc" }, { dueDate: "asc" }, { priority: "desc" }],
-  });
+  const reminders = process.env.SCREENSHOT_MODE === "true"
+    ? getScreenshotReminders()
+    : await prisma.reminder.findMany({
+        orderBy: [{ status: "asc" }, { dueDate: "asc" }, { priority: "desc" }],
+      });
   const editingReminder = params?.edit
     ? reminders.find((reminder) => reminder.id === params.edit)
     : null;

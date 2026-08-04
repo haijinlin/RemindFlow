@@ -14,11 +14,13 @@ export async function POST(request: Request) {
 async function handleDailyEmail(request: Request) {
   const cronSecret = process.env.CRON_SECRET?.trim();
 
-  if (cronSecret) {
-    const authorization = request.headers.get("authorization");
-    if (authorization !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  if (!cronSecret) {
+    return NextResponse.json({ error: "Cron authentication is not configured." }, { status: 503 });
+  }
+
+  const authorization = request.headers.get("authorization");
+  if (authorization !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const result = await sendDailyReminderEmail();

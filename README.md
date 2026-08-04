@@ -59,7 +59,7 @@ You can also send a test email from:
 /settings
 ```
 
-If `CRON_SECRET` is set, call it with:
+The endpoint fails closed when `CRON_SECRET` is missing. Call it with:
 
 ```txt
 Authorization: Bearer <CRON_SECRET>
@@ -77,6 +77,16 @@ AUTH_SECRET=
 ```
 
 `AUTH_SECRET` should be a long random string. In local development, the app is open if these are not set. In production, they are required.
+
+Authentication is checked both at the route boundary and again inside every database-changing
+Server Action. Sessions use a secure, HTTP-only cookie.
+
+## Privacy classification
+
+RemindFlow should remain a private production app because reminders may contain financial,
+appointment, contact, or subscription details. Use synthetic screenshots for the portfolio rather
+than connecting an anonymous demo to the production database. Daily emails intentionally contain
+reminder titles and selected details, so the notification recipient account should also be protected.
 
 ## Deploy Checklist
 

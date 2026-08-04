@@ -3,7 +3,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import {
-  authPassword,
+  isValidPassword,
   isAuthConfigured,
   sessionCookieName,
   sessionToken,
@@ -24,7 +24,7 @@ export async function login(formData: FormData) {
     redirect("/login?error=config");
   }
 
-  if (typeof password !== "string" || password !== authPassword()) {
+  if (typeof password !== "string" || !isValidPassword(password)) {
     redirect(`/login?error=invalid&from=${encodeURIComponent(from)}`);
   }
 

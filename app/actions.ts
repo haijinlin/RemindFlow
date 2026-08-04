@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { sendDailyReminderEmail } from "@/lib/daily-email";
 import { prisma } from "@/lib/prisma";
+import { requireAuthenticatedSession } from "@/lib/server-auth";
 
 function blockScreenshotWrites() {
   if (process.env.SCREENSHOT_MODE === "true") {
@@ -56,6 +57,7 @@ function parseReminderForm(formData: FormData, status: "PENDING" | "WAITING" | R
 }
 
 export async function createReminder(formData: FormData) {
+  await requireAuthenticatedSession();
   blockScreenshotWrites();
   const returnTo = redirectTarget(formData);
 
@@ -76,6 +78,7 @@ export async function createReminder(formData: FormData) {
 }
 
 export async function updateReminder(id: string, formData: FormData) {
+  await requireAuthenticatedSession();
   blockScreenshotWrites();
   const returnTo = redirectTarget(formData);
 
@@ -100,6 +103,7 @@ export async function updateReminder(id: string, formData: FormData) {
 }
 
 export async function deleteReminder(id: string, formData?: FormData) {
+  await requireAuthenticatedSession();
   blockScreenshotWrites();
   await prisma.reminder.delete({ where: { id } });
   revalidatePath("/");
@@ -107,6 +111,7 @@ export async function deleteReminder(id: string, formData?: FormData) {
 }
 
 export async function setReminderStatus(id: string, status: ReminderStatus, formData?: FormData) {
+  await requireAuthenticatedSession();
   blockScreenshotWrites();
   const completionNote = formData ? getString(formData, "completionNote").trim() || null : null;
 
@@ -181,6 +186,7 @@ function nextRepeatDate(date: Date, frequency: string) {
 }
 
 export async function sendTestReminderEmail() {
+  await requireAuthenticatedSession();
   blockScreenshotWrites();
   const result = await sendDailyReminderEmail();
   const params = new URLSearchParams({

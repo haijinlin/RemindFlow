@@ -12,6 +12,21 @@ export function isAuthConfigured() {
   return Boolean(authPassword() && authSecret());
 }
 
+function constantTimeEqual(left: string, right: string) {
+  if (left.length !== right.length) return false;
+
+  let difference = 0;
+  for (let index = 0; index < left.length; index += 1) {
+    difference |= left.charCodeAt(index) ^ right.charCodeAt(index);
+  }
+  return difference === 0;
+}
+
+export function isValidPassword(candidate: string) {
+  const password = authPassword();
+  return Boolean(password) && constantTimeEqual(candidate, password);
+}
+
 export async function sessionToken() {
   const password = authPassword();
   const secret = authSecret();
@@ -37,5 +52,5 @@ export async function isValidSession(token: string | undefined) {
   if (!isAuthConfigured()) return process.env.NODE_ENV !== "production";
   if (!token) return false;
 
-  return token === (await sessionToken());
+  return constantTimeEqual(token, await sessionToken());
 }

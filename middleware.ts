@@ -31,6 +31,7 @@ function isPublicPath(pathname: string) {
   return (
     pathname === "/login" ||
     pathname === "/api/reminders/daily-email" ||
+    pathname === "/api/lifehub/summary" ||
     pathname.startsWith("/_next/") ||
     pathname.startsWith("/icons/") ||
     pathname === "/apple-touch-icon.png" ||

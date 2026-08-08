@@ -17,3 +17,9 @@ select,
 textarea {
   font: inherit;
 }
+
+input[type="date"] {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+}

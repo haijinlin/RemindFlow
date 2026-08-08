@@ -64,6 +64,7 @@ type PageSearchParams = {
   templateType?: string;
   templatePriority?: string;
   templateDueOffset?: string;
+  created?: string;
 };
 
 const activeStatuses = new Set<ReminderStatus>([
@@ -232,7 +233,7 @@ export default async function Home({
         ) : null}
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
-          <section className="min-w-0 space-y-5">
+          <section className="order-2 min-w-0 space-y-5 lg:order-1">
             {view === "dashboard" ? (
               <div className="grid gap-4 xl:grid-cols-2">
                 <div className="xl:col-span-2">
@@ -308,7 +309,7 @@ export default async function Home({
             ) : null}
           </section>
 
-          <aside className="space-y-4">
+          <aside className="order-1 space-y-4 lg:order-2">
             <ReminderForm
               reminder={editingReminder}
               returnTo={returnTo}
@@ -316,8 +317,9 @@ export default async function Home({
               templateType={params?.templateType}
               templatePriority={params?.templatePriority}
               templateDueOffset={params?.templateDueOffset}
+              created={params?.created === "1"}
             />
-            <div className="rounded-md border border-slate-200 bg-white p-4 text-sm shadow-sm">
+            <div className="hidden rounded-md border border-slate-200 bg-white p-4 text-sm shadow-sm lg:block">
               <div className="font-semibold text-slate-950">Future integration</div>
               <p className="mt-2 text-slate-500">
                 Reminders keep source app and linked entity fields, so CoCare, HomeStock, Job Tracker,
@@ -338,6 +340,7 @@ function ReminderForm({
   templateType,
   templatePriority,
   templateDueOffset,
+  created,
 }: {
   reminder?: Reminder | null;
   returnTo: string;
@@ -345,6 +348,7 @@ function ReminderForm({
   templateType?: string;
   templatePriority?: string;
   templateDueOffset?: string;
+  created?: boolean;
 }) {
   const action = reminder ? updateReminder.bind(null, reminder.id) : createReminder;
   const defaultType = isReminderType(templateType) ? templateType : ReminderType.GENERAL;
@@ -354,7 +358,11 @@ function ReminderForm({
   const defaultDueDate = reminder?.dueDate ?? addDays(new Date(), Number(templateDueOffset || "0"));
 
   return (
-    <form action={action} className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
+    <form
+      id="quick-capture"
+      action={action}
+      className="scroll-mt-4 rounded-md border border-slate-200 bg-white p-4 shadow-sm"
+    >
       <input type="hidden" name="returnTo" value={returnTo} />
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-base font-semibold text-slate-950">
@@ -366,6 +374,11 @@ function ReminderForm({
           </a>
         ) : null}
       </div>
+      {created && !reminder ? (
+        <div className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800">
+          Reminder added. You can add another one below.
+        </div>
+      ) : null}
       <div className="mt-4 space-y-3">
         {!reminder ? (
           <div className="grid grid-cols-2 gap-2">
@@ -378,7 +391,7 @@ function ReminderForm({
             ].map((template) => (
               <a
                 key={template.title}
-                href={`/?templateTitle=${encodeURIComponent(template.title)}&templateType=${template.type}&templatePriority=${template.priority}${"dueOffset" in template ? `&templateDueOffset=${template.dueOffset}` : ""}`}
+                href={`/?templateTitle=${encodeURIComponent(template.title)}&templateType=${template.type}&templatePriority=${template.priority}${"dueOffset" in template ? `&templateDueOffset=${template.dueOffset}` : ""}#quick-capture`}
                 className="rounded-md border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
               >
                 {template.title}
@@ -417,23 +430,23 @@ function ReminderForm({
             ))}
           </select>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <label className="text-xs font-medium text-slate-500">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <label className="min-w-0 text-xs font-medium text-slate-500">
             Start optional
             <input
               name="startDate"
               type="date"
               defaultValue={localDateInputValue(reminder?.startDate)}
-              className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 text-sm text-slate-950"
+              className="mt-1 block h-10 w-full min-w-0 max-w-full rounded-md border border-slate-300 px-3 text-sm text-slate-950"
             />
           </label>
-          <label className="text-xs font-medium text-slate-500">
+          <label className="min-w-0 text-xs font-medium text-slate-500">
             Due
             <input
               name="dueDate"
               type="date"
               defaultValue={localDateInputValue(defaultDueDate)}
-              className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 text-sm text-slate-950"
+              className="mt-1 block h-10 w-full min-w-0 max-w-full rounded-md border border-slate-300 px-3 text-sm text-slate-950"
               required
             />
           </label>

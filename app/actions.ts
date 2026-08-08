@@ -33,6 +33,11 @@ function withError(target: string, error: string) {
   return `${target}${separator}error=${error}`;
 }
 
+function withCreated(target: string) {
+  const separator = target.includes("?") ? "&" : "?";
+  return `${target}${separator}created=1#quick-capture`;
+}
+
 function parseReminderForm(formData: FormData, status: "PENDING" | "WAITING" | ReminderStatus) {
   return reminderSchema.parse({
     title: getString(formData, "title"),
@@ -74,7 +79,7 @@ export async function createReminder(formData: FormData) {
   }
 
   revalidatePath("/");
-  redirect(returnTo);
+  redirect(withCreated(returnTo));
 }
 
 export async function updateReminder(id: string, formData: FormData) {

@@ -8,9 +8,11 @@ const activeStatuses = [
   ReminderStatus.PENDING,
 ];
 
-export async function sendDailyReminderEmail() {
+const notificationTimeZone = "Australia/Sydney";
+
+export async function sendDailyReminderEmail({ force = false }: { force?: boolean } = {}) {
   const recipient = reminderRecipientEmail();
-  const today = startOfDay(new Date());
+  const today = dateOnlyInTimeZone(new Date(), notificationTimeZone);
   const tomorrow = addDays(today, 1);
   const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
   const soonEnd = addDays(today, 7);
@@ -85,6 +87,24 @@ export async function sendDailyReminderEmail() {
       reminder.dueDate <= soonEnd,
   );
 
+  const counts = {
+    today: todayItems.length,
+    overdue: overdue.length,
+    thisWeek: thisWeek.length,
+    bills: bills.length,
+    subscriptions: subscriptions.length,
+    watchlist: watchlist.length,
+    expiringDeals: expiringDeals.length,
+  };
+
+  if (!force && emailItems.length === 0) {
+    return {
+      status: "skipped" as const,
+      reason: "No reminders are scheduled for email today.",
+      counts,
+    };
+  }
+
   const subject = `RemindFlow daily summary: ${todayItems.length} today, ${overdue.length} overdue`;
   const text = [
     `RemindFlow daily summary for ${format(today, "d MMM yyyy")}`,
@@ -127,15 +147,7 @@ export async function sendDailyReminderEmail() {
 
   return {
     ...result,
-    counts: {
-      today: todayItems.length,
-      overdue: overdue.length,
-      thisWeek: thisWeek.length,
-      bills: bills.length,
-      subscriptions: subscriptions.length,
-      watchlist: watchlist.length,
-      expiringDeals: expiringDeals.length,
-    },
+    counts,
   };
 }
 
@@ -341,4 +353,16 @@ function startOfDay(date: Date) {
 
 function isSameLocalDay(left: Date, right: Date) {
   return startOfDay(left).getTime() === startOfDay(right).getTime();
+}
+
+function dateOnlyInTimeZone(date: Date, timeZone: string) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+
+  return new Date(Date.UTC(Number(value.year), Number(value.month) - 1, Number(value.day)));
 }

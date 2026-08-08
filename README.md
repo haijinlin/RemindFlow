@@ -65,7 +65,7 @@ The endpoint fails closed when `CRON_SECRET` is missing. Call it with:
 Authorization: Bearer <CRON_SECRET>
 ```
 
-`vercel.json` schedules the email for `0 21 * * *` UTC, which is 7:00 AM in Sydney during AEST and 8:00 AM during AEDT.
+`vercel.json` schedules the email for `0 21 * * *` UTC, which is 7:00 AM in Sydney/Melbourne during AEST and 8:00 AM during AEDT. Reminder dates are evaluated in the `Australia/Sydney` time zone (the same current daylight-saving rules as Melbourne). Scheduled emails are skipped when no reminder is due under its notification rules; the Settings test button can still force a test email.
 
 ## Login Protection
 

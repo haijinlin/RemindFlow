@@ -188,12 +188,12 @@ function nextRepeatDate(date: Date, frequency: string) {
 export async function sendTestReminderEmail() {
   await requireAuthenticatedSession();
   blockScreenshotWrites();
-  const result = await sendDailyReminderEmail();
+  const result = await sendDailyReminderEmail({ force: true });
   const params = new URLSearchParams({
     emailStatus: result.status,
   });
 
-  if ("reason" in result) {
+  if ("reason" in result && typeof result.reason === "string") {
     params.set("reason", result.reason);
   }
 

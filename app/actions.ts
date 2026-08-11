@@ -145,6 +145,9 @@ export async function uploadReminderAttachment(id: string, formData: FormData) {
     const blob = await put(`remindflow/${id}/${Date.now()}-${safeName}`, file, {
       access: "public",
       addRandomSuffix: true,
+      contentType: file.type,
+      maximumSizeInBytes: maxAttachmentSize,
+      token: process.env.BLOB_READ_WRITE_TOKEN,
     });
 
     await prisma.reminderAttachment.create({
@@ -158,7 +161,16 @@ export async function uploadReminderAttachment(id: string, formData: FormData) {
         pathname: blob.pathname,
       },
     });
-  } catch {
+  } catch (error) {
+    console.error("RemindFlow attachment upload failed", {
+      reminderId: id,
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+      hasBlobToken: Boolean(process.env.BLOB_READ_WRITE_TOKEN?.trim()),
+      hasBlobStoreId: Boolean(process.env.BLOB_STORE_ID?.trim()),
+      error,
+    });
     redirect(withError(returnTo, "attachment-upload-failed"));
   }
 

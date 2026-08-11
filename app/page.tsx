@@ -381,28 +381,29 @@ function ReminderForm({
   const defaultDueDate = reminder?.dueDate ?? addDays(new Date(), Number(templateDueOffset || "0"));
 
   return (
-    <form
-      id="quick-capture"
-      action={action}
-      className="scroll-mt-4 rounded-md border border-slate-200 bg-white p-4 shadow-sm"
-    >
-      <input type="hidden" name="returnTo" value={returnTo} />
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-base font-semibold text-slate-950">
-          {reminder ? "Edit reminder" : "Quick capture"}
-        </h2>
-        {reminder ? (
-          <a href="/" className="text-sm font-medium text-slate-500 hover:text-slate-950">
-            New
-          </a>
-        ) : null}
-      </div>
-      {created && !reminder ? (
-        <div className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800">
-          Reminder added. You can add another one below.
+    <>
+      <form
+        id="quick-capture"
+        action={action}
+        className="scroll-mt-4 rounded-md border border-slate-200 bg-white p-4 shadow-sm"
+      >
+        <input type="hidden" name="returnTo" value={returnTo} />
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-base font-semibold text-slate-950">
+            {reminder ? "Edit reminder" : "Quick capture"}
+          </h2>
+          {reminder ? (
+            <a href="/" className="text-sm font-medium text-slate-500 hover:text-slate-950">
+              New
+            </a>
+          ) : null}
         </div>
-      ) : null}
-      <div className="mt-4 space-y-3">
+        {created && !reminder ? (
+          <div className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800">
+            Reminder added. You can add another one below.
+          </div>
+        ) : null}
+        <div className="mt-4 space-y-3">
         {!reminder ? (
           <div className="grid grid-cols-2 gap-2">
             {[
@@ -587,71 +588,84 @@ function ReminderForm({
             ) : null}
           </div>
         </details>
-        {reminder ? (
-          <section className="rounded-md border border-slate-200 p-3">
-            <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-              <Paperclip className="h-4 w-4" />
-              Attachments
-            </div>
-            <div className="mt-3 space-y-2">
-              {reminder.attachments.map((attachment) => (
-                <div
-                  key={attachment.id}
-                  className="flex items-center justify-between gap-3 rounded-md border border-slate-200 px-3 py-2 text-sm"
-                >
-                  <a
-                    href={attachment.url}
-                    target="_blank"
-                    className="flex min-w-0 items-center gap-2 text-slate-700 hover:text-slate-950"
-                  >
-                    <FileText className="h-4 w-4 shrink-0" />
-                    <span className="truncate">{attachment.fileName}</span>
-                  </a>
-                  <form action={deleteReminderAttachment.bind(null, attachment.id)}>
-                    <input type="hidden" name="returnTo" value={`/?edit=${reminder.id}`} />
-                    <button
-                      className="rounded-md border border-red-200 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
-                      title="Delete attachment"
-                    >
-                      Delete
-                    </button>
-                  </form>
-                </div>
-              ))}
-              {reminder.attachments.length === 0 ? (
-                <div className="rounded-md border border-dashed border-slate-200 px-3 py-4 text-center text-xs text-slate-400">
-                  No attachments yet.
-                </div>
-              ) : null}
-            </div>
-            {attachmentsConfigured ? (
-              <form action={uploadReminderAttachment.bind(null, reminder.id)} className="mt-3 space-y-2">
-                <input type="hidden" name="returnTo" value={`/?edit=${reminder.id}`} />
-                <input
-                  name="attachment"
-                  type="file"
-                  accept="application/pdf,image/jpeg,image/png"
-                  className="block w-full text-sm text-slate-600 file:mr-3 file:h-9 file:rounded-md file:border-0 file:bg-slate-950 file:px-3 file:text-sm file:font-medium file:text-white"
-                  required
-                />
-                <button className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                  <Paperclip className="h-4 w-4" />
-                  Upload invoice or file
-                </button>
-              </form>
-            ) : (
-              <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-                File upload needs Vercel Blob. Set BLOB_READ_WRITE_TOKEN in the Vercel project.
-              </div>
-            )}
-          </section>
-        ) : null}
         <button className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-slate-950 px-4 text-sm font-medium text-white hover:bg-slate-800">
           <Plus className="h-4 w-4" />
           {reminder ? "Save reminder" : "Add reminder"}
         </button>
+        </div>
+      </form>
+      {reminder ? (
+        <AttachmentManager reminder={reminder} attachmentsConfigured={attachmentsConfigured} />
+      ) : null}
+    </>
+  );
+}
+
+function AttachmentManager({
+  reminder,
+  attachmentsConfigured,
+}: {
+  reminder: ReminderWithAttachments;
+  attachmentsConfigured: boolean;
+}) {
+  return (
+    <section className="rounded-md border border-slate-200 bg-white p-3 shadow-sm">
+      <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+        <Paperclip className="h-4 w-4" />
+        Attachments
       </div>
-    </form>
+      <div className="mt-3 space-y-2">
+        {reminder.attachments.map((attachment) => (
+          <div
+            key={attachment.id}
+            className="flex items-center justify-between gap-3 rounded-md border border-slate-200 px-3 py-2 text-sm"
+          >
+            <a
+              href={attachment.url}
+              target="_blank"
+              className="flex min-w-0 items-center gap-2 text-slate-700 hover:text-slate-950"
+            >
+              <FileText className="h-4 w-4 shrink-0" />
+              <span className="truncate">{attachment.fileName}</span>
+            </a>
+            <form action={deleteReminderAttachment.bind(null, attachment.id)}>
+              <input type="hidden" name="returnTo" value={`/?edit=${reminder.id}`} />
+              <button
+                className="rounded-md border border-red-200 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
+                title="Delete attachment"
+              >
+                Delete
+              </button>
+            </form>
+          </div>
+        ))}
+        {reminder.attachments.length === 0 ? (
+          <div className="rounded-md border border-dashed border-slate-200 px-3 py-4 text-center text-xs text-slate-400">
+            No attachments yet.
+          </div>
+        ) : null}
+      </div>
+      {attachmentsConfigured ? (
+        <form action={uploadReminderAttachment.bind(null, reminder.id)} className="mt-3 space-y-2">
+          <input type="hidden" name="returnTo" value={`/?edit=${reminder.id}`} />
+          <input
+            name="attachment"
+            type="file"
+            accept="application/pdf,image/jpeg,image/png"
+            className="block w-full text-sm text-slate-600 file:mr-3 file:h-9 file:rounded-md file:border-0 file:bg-slate-950 file:px-3 file:text-sm file:font-medium file:text-white"
+            required
+          />
+          <button className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50">
+            <Paperclip className="h-4 w-4" />
+            Upload invoice or file
+          </button>
+        </form>
+      ) : (
+        <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          File upload needs Vercel Blob. Set BLOB_READ_WRITE_TOKEN in the Vercel project.
+        </div>
+      )}
+    </section>
   );
 }
 

@@ -25,6 +25,7 @@ async function handleDailyEmail(request: Request) {
 
   const result = await sendDailyReminderEmail();
   const status = result.status === "failed" ? 500 : 200;
+  console.info("RemindFlow daily email result", result);
 
   return NextResponse.json(result, { status });
 }

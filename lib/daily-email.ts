@@ -58,8 +58,18 @@ export async function sendDailyReminderEmail({ force = false }: { force?: boolea
   const thisWeek = reminders.filter(
     (reminder) => reminder.dueDate >= today && reminder.dueDate <= weekEnd,
   );
-  const bills = emailItems.filter((reminder) => reminder.type === ReminderType.BILL);
-  const subscriptions = emailItems.filter((reminder) => reminder.type === ReminderType.SUBSCRIPTION);
+  const bills = reminders.filter(
+    (reminder) =>
+      reminder.type === ReminderType.BILL &&
+      reminder.dueDate >= today &&
+      reminder.dueDate <= weekEnd,
+  );
+  const subscriptions = reminders.filter(
+    (reminder) =>
+      reminder.type === ReminderType.SUBSCRIPTION &&
+      reminder.dueDate >= today &&
+      reminder.dueDate <= soonEnd,
+  );
   const watchlist = reminders.filter(
     (reminder) => reminder.type === ReminderType.WATCHLIST && reminder.dueDate <= today,
   );
@@ -96,8 +106,15 @@ export async function sendDailyReminderEmail({ force = false }: { force?: boolea
     watchlist: watchlist.length,
     expiringDeals: expiringDeals.length,
   };
+  const shouldSendSummary =
+    emailItems.length > 0 ||
+    thisWeek.length > 0 ||
+    bills.length > 0 ||
+    subscriptions.length > 0 ||
+    watchlist.length > 0 ||
+    deals.length > 0;
 
-  if (!force && emailItems.length === 0) {
+  if (!force && !shouldSendSummary) {
     return {
       status: "skipped" as const,
       reason: "No reminders are scheduled for email today.",
@@ -105,7 +122,7 @@ export async function sendDailyReminderEmail({ force = false }: { force?: boolea
     };
   }
 
-  const subject = `RemindFlow daily summary: ${todayItems.length} today, ${overdue.length} overdue`;
+  const subject = `RemindFlow daily summary: ${todayItems.length} today, ${overdue.length} overdue, ${thisWeek.length} this week`;
   const text = [
     `RemindFlow daily summary for ${format(today, "d MMM yyyy")}`,
     "",

@@ -621,7 +621,7 @@ function AttachmentManager({
             className="flex items-center justify-between gap-3 rounded-md border border-slate-200 px-3 py-2 text-sm"
           >
             <a
-              href={attachment.url}
+              href={`/api/attachments/${attachment.id}`}
               target="_blank"
               className="flex min-w-0 items-center gap-2 text-slate-700 hover:text-slate-950"
             >
@@ -798,7 +798,7 @@ function ReminderRow({
               {reminder.attachments.map((attachment) => (
                 <a
                   key={attachment.id}
-                  href={attachment.url}
+                  href={`/api/attachments/${attachment.id}`}
                   target="_blank"
                   className="inline-flex max-w-full items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
                 >

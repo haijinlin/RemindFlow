@@ -143,7 +143,7 @@ export async function uploadReminderAttachment(id: string, formData: FormData) {
   try {
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
     const blob = await put(`remindflow/${id}/${Date.now()}-${safeName}`, file, {
-      access: "public",
+      access: "private",
       addRandomSuffix: true,
       contentType: file.type,
       maximumSizeInBytes: maxAttachmentSize,

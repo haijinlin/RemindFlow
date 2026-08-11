@@ -68,6 +68,7 @@ model Reminder {
   sourceId         String?
   linkedEntityType String?
   linkedEntityId   String?
+  attachments      ReminderAttachment[]
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 
@@ -76,4 +77,19 @@ model Reminder {
   @@index([type])
   @@index([sourceApp, sourceId])
   @@index([linkedEntityType, linkedEntityId])
+}
+
+model ReminderAttachment {
+  id           String   @id @default(cuid())
+  reminderId   String
+  reminder     Reminder @relation(fields: [reminderId], references: [id], onDelete: Cascade)
+  fileName     String
+  contentType  String
+  size         Int
+  url          String
+  downloadUrl  String
+  pathname     String
+  uploadedAt   DateTime @default(now())
+
+  @@index([reminderId])
 }

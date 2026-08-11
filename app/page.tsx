@@ -1,4 +1,4 @@
-import type { Reminder } from "@prisma/client";
+import type { Reminder, ReminderAttachment } from "@prisma/client";
 import { ReminderPriority, ReminderStatus, ReminderType } from "@prisma/client";
 import Image from "next/image";
 import {
@@ -20,7 +20,9 @@ import {
   CircleDollarSign,
   Clock3,
   ExternalLink,
+  FileText,
   Mail,
+  Paperclip,
   Phone,
   Plus,
   RotateCcw,
@@ -32,8 +34,10 @@ import {
 import {
   createReminder,
   deleteReminder,
+  deleteReminderAttachment,
   setReminderStatus,
   updateReminder,
+  uploadReminderAttachment,
 } from "@/app/actions";
 import { logout } from "@/app/login/actions";
 import { prisma } from "@/lib/prisma";
@@ -65,6 +69,10 @@ type PageSearchParams = {
   templatePriority?: string;
   templateDueOffset?: string;
   created?: string;
+};
+
+type ReminderWithAttachments = Reminder & {
+  attachments: ReminderAttachment[];
 };
 
 const activeStatuses = new Set<ReminderStatus>([
@@ -124,10 +132,12 @@ export default async function Home({
   const parsedMonth = params?.month ? new Date(`${params.month}-01T00:00:00`) : new Date();
   const month = isValid(parsedMonth) ? parsedMonth : new Date();
   const returnTo = buildReturnTo({ view, typeFilter, statusFilter, query, month: params?.month });
+  const attachmentsConfigured = Boolean(process.env.BLOB_READ_WRITE_TOKEN?.trim());
 
-  const reminders = process.env.SCREENSHOT_MODE === "true"
-    ? getScreenshotReminders()
+  const reminders: ReminderWithAttachments[] = process.env.SCREENSHOT_MODE === "true"
+    ? getScreenshotReminders().map((reminder) => ({ ...reminder, attachments: [] }))
     : await prisma.reminder.findMany({
+        include: { attachments: { orderBy: { uploadedAt: "desc" } } },
         orderBy: [{ status: "asc" }, { dueDate: "asc" }, { priority: "desc" }],
       });
   const editingReminder = params?.edit
@@ -231,6 +241,16 @@ export default async function Home({
             Check the reminder details. Title, due date, valid URL, and amount fields need valid values.
           </div>
         ) : null}
+        {params?.error === "invalid-attachment" ? (
+          <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+            Attachment must be a PDF, JPG, or PNG file up to 10MB.
+          </div>
+        ) : null}
+        {params?.error === "attachment-upload-failed" ? (
+          <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+            Attachment upload failed. Check Vercel Blob is configured.
+          </div>
+        ) : null}
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
           <section className="order-2 min-w-0 space-y-5 lg:order-1">
@@ -318,6 +338,7 @@ export default async function Home({
               templatePriority={params?.templatePriority}
               templateDueOffset={params?.templateDueOffset}
               created={params?.created === "1"}
+              attachmentsConfigured={attachmentsConfigured}
             />
             <div className="hidden rounded-md border border-slate-200 bg-white p-4 text-sm shadow-sm lg:block">
               <div className="font-semibold text-slate-950">Future integration</div>
@@ -341,14 +362,16 @@ function ReminderForm({
   templatePriority,
   templateDueOffset,
   created,
+  attachmentsConfigured,
 }: {
-  reminder?: Reminder | null;
+  reminder?: ReminderWithAttachments | null;
   returnTo: string;
   templateTitle?: string;
   templateType?: string;
   templatePriority?: string;
   templateDueOffset?: string;
   created?: boolean;
+  attachmentsConfigured: boolean;
 }) {
   const action = reminder ? updateReminder.bind(null, reminder.id) : createReminder;
   const defaultType = isReminderType(templateType) ? templateType : ReminderType.GENERAL;
@@ -564,6 +587,65 @@ function ReminderForm({
             ) : null}
           </div>
         </details>
+        {reminder ? (
+          <section className="rounded-md border border-slate-200 p-3">
+            <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+              <Paperclip className="h-4 w-4" />
+              Attachments
+            </div>
+            <div className="mt-3 space-y-2">
+              {reminder.attachments.map((attachment) => (
+                <div
+                  key={attachment.id}
+                  className="flex items-center justify-between gap-3 rounded-md border border-slate-200 px-3 py-2 text-sm"
+                >
+                  <a
+                    href={attachment.url}
+                    target="_blank"
+                    className="flex min-w-0 items-center gap-2 text-slate-700 hover:text-slate-950"
+                  >
+                    <FileText className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{attachment.fileName}</span>
+                  </a>
+                  <form action={deleteReminderAttachment.bind(null, attachment.id)}>
+                    <input type="hidden" name="returnTo" value={`/?edit=${reminder.id}`} />
+                    <button
+                      className="rounded-md border border-red-200 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
+                      title="Delete attachment"
+                    >
+                      Delete
+                    </button>
+                  </form>
+                </div>
+              ))}
+              {reminder.attachments.length === 0 ? (
+                <div className="rounded-md border border-dashed border-slate-200 px-3 py-4 text-center text-xs text-slate-400">
+                  No attachments yet.
+                </div>
+              ) : null}
+            </div>
+            {attachmentsConfigured ? (
+              <form action={uploadReminderAttachment.bind(null, reminder.id)} className="mt-3 space-y-2">
+                <input type="hidden" name="returnTo" value={`/?edit=${reminder.id}`} />
+                <input
+                  name="attachment"
+                  type="file"
+                  accept="application/pdf,image/jpeg,image/png"
+                  className="block w-full text-sm text-slate-600 file:mr-3 file:h-9 file:rounded-md file:border-0 file:bg-slate-950 file:px-3 file:text-sm file:font-medium file:text-white"
+                  required
+                />
+                <button className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                  <Paperclip className="h-4 w-4" />
+                  Upload invoice or file
+                </button>
+              </form>
+            ) : (
+              <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                File upload needs Vercel Blob. Set BLOB_READ_WRITE_TOKEN in the Vercel project.
+              </div>
+            )}
+          </section>
+        ) : null}
         <button className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-slate-950 px-4 text-sm font-medium text-white hover:bg-slate-800">
           <Plus className="h-4 w-4" />
           {reminder ? "Save reminder" : "Add reminder"}
@@ -580,7 +662,7 @@ function ListView({
   query,
   returnTo,
 }: {
-  reminders: Reminder[];
+  reminders: ReminderWithAttachments[];
   typeFilter: string;
   statusFilter: string;
   query: string;
@@ -639,7 +721,7 @@ function DashboardSection({
   urgent = false,
 }: {
   title: string;
-  items: Reminder[];
+  items: ReminderWithAttachments[];
   returnTo: string;
   urgent?: boolean;
 }) {
@@ -666,7 +748,7 @@ function ReminderRow({
   returnTo,
   compact = false,
 }: {
-  reminder: Reminder;
+  reminder: ReminderWithAttachments;
   returnTo: string;
   compact?: boolean;
 }) {
@@ -697,6 +779,21 @@ function ReminderRow({
             </div>
           ) : null}
           {!compact && reminder.notes ? <p className="mt-2 text-slate-700">{reminder.notes}</p> : null}
+          {!compact && reminder.attachments.length > 0 ? (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {reminder.attachments.map((attachment) => (
+                <a
+                  key={attachment.id}
+                  href={attachment.url}
+                  target="_blank"
+                  className="inline-flex max-w-full items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                >
+                  <FileText className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate">{attachment.fileName}</span>
+                </a>
+              ))}
+            </div>
+          ) : null}
           {!compact && (reminder.amount || reminder.targetPrice || reminder.storeName || reminder.contactName || reminder.url) ? (
             <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
               {reminder.amount ? (
@@ -790,7 +887,7 @@ function CalendarView({
   month,
   returnTo,
 }: {
-  reminders: Reminder[];
+  reminders: ReminderWithAttachments[];
   month: Date;
   returnTo: string;
 }) {
@@ -920,7 +1017,7 @@ function buildReturnTo({
   return `/?${params.toString()}`;
 }
 
-function reminderMatchesQuery(reminder: Reminder, query: string) {
+function reminderMatchesQuery(reminder: ReminderWithAttachments, query: string) {
   const value = query.toLowerCase();
   return [
     reminder.title,
@@ -930,16 +1027,17 @@ function reminderMatchesQuery(reminder: Reminder, query: string) {
     reminder.storeName,
     reminder.url,
     reminder.completionNote,
+    ...reminder.attachments.map((attachment) => attachment.fileName),
   ]
     .filter(Boolean)
     .some((field) => field!.toLowerCase().includes(value));
 }
 
-function uniqueReminders(reminders: Reminder[]) {
+function uniqueReminders(reminders: ReminderWithAttachments[]) {
   return Array.from(new Map(reminders.map((reminder) => [reminder.id, reminder])).values());
 }
 
-function monthAgendaItems(reminders: Reminder[], monthStart: Date, monthEnd: Date) {
+function monthAgendaItems(reminders: ReminderWithAttachments[], monthStart: Date, monthEnd: Date) {
   return reminders
     .flatMap((reminder) => {
       if (reminder.type === ReminderType.DEAL && reminder.startDate) {

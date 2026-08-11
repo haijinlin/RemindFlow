@@ -47,6 +47,16 @@ APP_BASE_URL=
 CRON_SECRET=
 ```
 
+## File Attachments
+
+Reminder attachments use Vercel Blob for invoice, statement, and receipt uploads. Supported files are PDF, JPG, and PNG up to 10MB.
+
+Set this environment variable from the Vercel Blob store connected to the project:
+
+```txt
+BLOB_READ_WRITE_TOKEN=
+```
+
 The email endpoint is:
 
 ```txt
@@ -97,6 +107,7 @@ For Vercel deployment, set these environment variables in the Vercel project:
 - `RESEND_API_KEY`
 - `EMAIL_FROM`
 - `REMIND_FLOW_NOTIFICATION_EMAIL`
+- `BLOB_READ_WRITE_TOKEN`
 - `CRON_SECRET`
 - `REMINDFLOW_APP_PASSWORD`
 - `AUTH_SECRET`

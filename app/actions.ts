@@ -1,6 +1,7 @@
 "use server";
 
 import { ReminderStatus } from "@prisma/client";
+import { del, put } from "@vercel/blob";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { sendDailyReminderEmail } from "@/lib/daily-email";
@@ -13,6 +14,9 @@ function blockScreenshotWrites() {
   }
 }
 import { parseDateOnly, reminderSchema } from "@/lib/reminders";
+
+const allowedAttachmentTypes = new Set(["application/pdf", "image/jpeg", "image/png"]);
+const maxAttachmentSize = 10 * 1024 * 1024;
 
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -110,7 +114,68 @@ export async function updateReminder(id: string, formData: FormData) {
 export async function deleteReminder(id: string, formData?: FormData) {
   await requireAuthenticatedSession();
   blockScreenshotWrites();
+  const attachments = await prisma.reminderAttachment.findMany({
+    where: { reminderId: id },
+    select: { url: true },
+  });
+
   await prisma.reminder.delete({ where: { id } });
+  await deleteBlobUrls(attachments.map((attachment) => attachment.url));
+
+  revalidatePath("/");
+  redirect(redirectTarget(formData));
+}
+
+export async function uploadReminderAttachment(id: string, formData: FormData) {
+  await requireAuthenticatedSession();
+  blockScreenshotWrites();
+  const returnTo = redirectTarget(formData);
+  const file = formData.get("attachment");
+
+  if (!(file instanceof File) || file.size === 0) {
+    redirect(withError(returnTo, "invalid-attachment"));
+  }
+
+  if (!allowedAttachmentTypes.has(file.type) || file.size > maxAttachmentSize) {
+    redirect(withError(returnTo, "invalid-attachment"));
+  }
+
+  try {
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+    const blob = await put(`remindflow/${id}/${Date.now()}-${safeName}`, file, {
+      access: "public",
+      addRandomSuffix: true,
+    });
+
+    await prisma.reminderAttachment.create({
+      data: {
+        reminderId: id,
+        fileName: file.name,
+        contentType: file.type,
+        size: file.size,
+        url: blob.url,
+        downloadUrl: blob.downloadUrl,
+        pathname: blob.pathname,
+      },
+    });
+  } catch {
+    redirect(withError(returnTo, "attachment-upload-failed"));
+  }
+
+  revalidatePath("/");
+  redirect(returnTo);
+}
+
+export async function deleteReminderAttachment(id: string, formData?: FormData) {
+  await requireAuthenticatedSession();
+  blockScreenshotWrites();
+  const attachment = await prisma.reminderAttachment.delete({
+    where: { id },
+    select: { url: true },
+  });
+
+  await deleteBlobUrls([attachment.url]);
+
   revalidatePath("/");
   redirect(redirectTarget(formData));
 }
@@ -203,4 +268,14 @@ export async function sendTestReminderEmail() {
   }
 
   redirect(`/settings?${params.toString()}`);
+}
+
+async function deleteBlobUrls(urls: string[]) {
+  if (urls.length === 0) return;
+
+  try {
+    await del(urls);
+  } catch {
+    // Keep the database action successful even if remote blob cleanup fails.
+  }
 }

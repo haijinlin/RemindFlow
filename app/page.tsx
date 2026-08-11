@@ -794,10 +794,27 @@ function ReminderRow({
           ) : null}
           {!compact && reminder.notes ? <p className="mt-2 text-slate-700">{reminder.notes}</p> : null}
           {compact && reminder.attachments.length > 0 ? (
-            <div className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-slate-500">
+            <a
+              href={
+                reminder.attachments.length === 1
+                  ? `/api/attachments/${reminder.attachments[0].id}`
+                  : `/?edit=${reminder.id}`
+              }
+              target={reminder.attachments.length === 1 ? "_blank" : undefined}
+              className="mt-2 inline-flex max-w-full items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-950"
+              title={
+                reminder.attachments.length === 1
+                  ? reminder.attachments[0].fileName
+                  : "Manage attachments"
+              }
+            >
               <Paperclip className="h-3.5 w-3.5" />
-              {reminder.attachments.length} {reminder.attachments.length === 1 ? "file" : "files"}
-            </div>
+              <span className="truncate">
+                {reminder.attachments.length === 1
+                  ? reminder.attachments[0].fileName
+                  : `${reminder.attachments.length} files`}
+              </span>
+            </a>
           ) : null}
           {!compact && reminder.attachments.length > 0 ? (
             <div className="mt-2 flex flex-wrap gap-2">

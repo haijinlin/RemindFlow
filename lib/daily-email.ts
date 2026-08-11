@@ -248,13 +248,15 @@ function dailyEmailHtml({
         <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#64748b;font-weight:700;">RemindFlow</div>
         <h1 style="margin:6px 0 4px;font-size:24px;line-height:1.25;">Daily summary</h1>
         <p style="margin:0;color:#64748b;font-size:14px;">${escapeHtml(format(today, "d MMM yyyy"))}</p>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;">
-          ${metric("Today", todayItems.length)}
-          ${metric("Overdue", overdue.length)}
-          ${metric("This Week", thisWeek.length)}
-          ${metric("Deals", deals.length)}
-          ${metric("Watchlist", watchlist.length)}
-        </div>
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:separate;border-spacing:8px;margin:8px -8px 0;">
+          <tr>
+            ${metric("Today", todayItems.length)}
+            ${metric("Overdue", overdue.length)}
+            ${metric("This Week", thisWeek.length)}
+            ${metric("Deals", deals.length)}
+            ${metric("Watchlist", watchlist.length)}
+          </tr>
+        </table>
       </div>
       ${sections}
       <div style="text-align:center;margin:24px 0;">
@@ -266,10 +268,10 @@ function dailyEmailHtml({
 }
 
 function metric(label: string, count: number) {
-  return `<div style="border:1px solid #e2e8f0;border-radius:6px;padding:10px 12px;min-width:92px;background:#f8fafc;">
+  return `<td style="border:1px solid #e2e8f0;border-radius:6px;padding:10px 12px;min-width:92px;background:#f8fafc;">
     <div style="font-size:11px;color:#64748b;">${escapeHtml(label)}</div>
     <div style="font-size:20px;font-weight:700;color:#0f172a;">${count}</div>
-  </div>`;
+  </td>`;
 }
 
 function tableSection(title: string, reminders: Reminder[], today: Date, color: string) {

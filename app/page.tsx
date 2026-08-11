@@ -793,6 +793,12 @@ function ReminderRow({
             </div>
           ) : null}
           {!compact && reminder.notes ? <p className="mt-2 text-slate-700">{reminder.notes}</p> : null}
+          {compact && reminder.attachments.length > 0 ? (
+            <div className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-slate-500">
+              <Paperclip className="h-3.5 w-3.5" />
+              {reminder.attachments.length} {reminder.attachments.length === 1 ? "file" : "files"}
+            </div>
+          ) : null}
           {!compact && reminder.attachments.length > 0 ? (
             <div className="mt-2 flex flex-wrap gap-2">
               {reminder.attachments.map((attachment) => (

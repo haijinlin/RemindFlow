@@ -150,6 +150,16 @@ export default async function Home({
   const attentionEnd = addDays(today, 3);
   const staleWaitingCutoff = addDays(today, -7);
   const activeReminders = reminders.filter((reminder) => activeStatuses.has(reminder.status));
+  const recurringReminders = activeReminders.filter(
+    (reminder) => reminder.repeatFrequency !== "NONE",
+  );
+  const recentDoneReminders = reminders
+    .filter((reminder) => reminder.status === ReminderStatus.DONE)
+    .sort(
+      (left, right) =>
+        (right.completedAt?.getTime() ?? right.updatedAt.getTime()) -
+        (left.completedAt?.getTime() ?? left.updatedAt.getTime()),
+    );
   const staleWaitingReminders = reminders.filter(
     (reminder) =>
       reminder.status === ReminderStatus.WAITING && reminder.updatedAt <= staleWaitingCutoff,
@@ -309,6 +319,16 @@ export default async function Home({
                   items={activeReminders.filter(
                     (reminder) => reminder.type === ReminderType.WATCHLIST,
                   )}
+                  returnTo={returnTo}
+                />
+                <DashboardSection
+                  title="Recurring"
+                  items={recurringReminders}
+                  returnTo={returnTo}
+                />
+                <DashboardSection
+                  title="Recent Done"
+                  items={recentDoneReminders}
                   returnTo={returnTo}
                 />
               </div>
@@ -767,6 +787,9 @@ function ReminderRow({
   compact?: boolean;
 }) {
   const Icon = typeIcon[reminder.type];
+  const isDone = reminder.status === ReminderStatus.DONE;
+  const doneNotePlaceholder =
+    reminder.type === ReminderType.BILL ? "Payment note" : "Done note";
 
   return (
     <article className="rounded-md border border-slate-200 p-3 text-sm">
@@ -784,8 +807,12 @@ function ReminderRow({
           </div>
           <h3 className="mt-2 font-semibold text-slate-950">{reminder.title}</h3>
           <div className="mt-1 text-slate-500">
-            {reminder.type === ReminderType.WATCHLIST ? "Next check" : "Due"}{" "}
-            {format(reminder.dueDate, "d MMM yyyy")}
+            {isDone && reminder.completedAt
+              ? `Completed ${format(reminder.completedAt, "d MMM yyyy")}`
+              : `${reminder.type === ReminderType.WATCHLIST ? "Next check" : "Due"} ${format(
+                  reminder.dueDate,
+                  "d MMM yyyy",
+                )}`}
           </div>
           {!compact ? (
             <div className="mt-1 text-xs text-slate-400">
@@ -857,6 +884,12 @@ function ReminderRow({
               Repeats {repeatLabel(reminder.repeatFrequency)}
             </div>
           ) : null}
+          {compact && reminder.repeatFrequency !== "NONE" ? (
+            <div className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-slate-500">
+              <RotateCcw className="h-3.5 w-3.5" />
+              Repeats {repeatLabel(reminder.repeatFrequency)}
+            </div>
+          ) : null}
           {!compact && reminder.completionNote ? (
             <div className="mt-2 rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs text-slate-600">
               <span className="font-medium text-slate-800">Done note:</span>{" "}
@@ -875,7 +908,7 @@ function ReminderRow({
             {!compact ? (
               <input
                 name="completionNote"
-                placeholder="Done note"
+                placeholder={doneNotePlaceholder}
                 className="mb-2 h-8 w-full rounded-md border border-emerald-200 px-2 text-xs text-slate-700"
               />
             ) : null}
